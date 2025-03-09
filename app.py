@@ -43,9 +43,9 @@ elif input_method == "อัปโหลดไฟล์ CSV":
 if orders and st.button("🚀 คำนวณ"):
     results = {}
     algorithms = {
-        "FFD with Rotated": first_fit_decreasing_rotated,
-        "BFD with Rotated": best_fit_decreasing_rotated,
-        "Guillotine with Rotated": guillotine_cutting_rotated
+        "FFD Rotated": first_fit_decreasing_rotated,
+        "BFD Rotated": best_fit_decreasing_rotated,
+        "Guillotine Rotated": guillotine_cutting_rotated
     }
 
     kpi_rows = []
