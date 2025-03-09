@@ -10,6 +10,14 @@ from algorithms import (
 
 st.title("📦 Cutting Stock Problem Optimizer")
 
+# 🔹 กำหนดค่าเริ่มต้นให้ session_state
+if "calculated" not in st.session_state:
+    st.session_state.calculated = False
+if "results" not in st.session_state:
+    st.session_state.results = {}
+if "kpi_df" not in st.session_state:
+    st.session_state.kpi_df = pd.DataFrame()
+
 # --- 🛠 กำหนดค่าพารามิเตอร์ ---
 st.sidebar.header("⚙️ ตั้งค่าการตัด")
 sheet_width = st.sidebar.number_input("ความกว้างของแผ่นเมทัลชีท (cm)", min_value=10.0, value=91.4, step=0.1)
@@ -76,6 +84,7 @@ if orders and st.button("🚀 คำนวณ"):
     st.session_state.results = results
     st.session_state.calculated = True
 
+# --- 📊 แสดง KPI Summary ---
 if st.session_state.calculated:
     st.subheader("📊 KPI Summary")
     st.dataframe(st.session_state.kpi_df)
