@@ -18,15 +18,22 @@ if "results" not in st.session_state:
 if "kpi_df" not in st.session_state:
     st.session_state.kpi_df = pd.DataFrame()
 
-# --- 🛠 กำหนดค่าพารามิเตอร์ ---
+# --- 🛠 กำหนดค่าการตัด ---
 st.sidebar.header("⚙️ ตั้งค่าการตัด")
 sheet_width = st.sidebar.number_input("ความกว้างของแผ่นเมทัลชีท (cm)", min_value=10.0, value=91.4, step=0.1)
+
+# ✅ เพิ่มช่องใส่ราคาต่อหน่วย
+price_per_meter = st.sidebar.number_input("💰 ราคาต่อหน่วย (บาท/เมตร)", min_value=0.1, value=100.0, step=0.1)
+
+# ✅ แปลงราคา/เมตร → ราคา/เมตร²
+price_per_m2 = price_per_meter / (sheet_width / 100)  # (บาท/เมตร) ÷ (เมตร)
 sort_strategy = st.sidebar.radio("เลือกกลยุทธ์การเรียงลำดับ", ["area", "max_side"])
 
 # --- 📥 รับออเดอร์ ---
 st.header("📥 เพิ่มออเดอร์")
 input_method = st.radio("เลือกวิธีกรอกข้อมูลออเดอร์", ["กรอกข้อมูลเอง", "อัปโหลดไฟล์ CSV"])
 orders = []
+alert_flag = False  # ตัวแปรเช็คว่า user กรอกค่าผิดหรือไม่
 
 if input_method == "กรอกข้อมูลเอง":
     num_orders = st.number_input("จำนวนออเดอร์", min_value=1, step=1)
@@ -36,6 +43,9 @@ if input_method == "กรอกข้อมูลเอง":
             width = st.number_input(f"🔹 ความกว้าง (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'w{i}')
         with col2:
             length = st.number_input(f"🔹 ความยาว (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'l{i}')
+        
+        if width > sheet_width or length > sheet_width:
+            alert_flag = True  # ถ้ามีค่าเกินให้ตั้ง flag เป็น True
         orders.append((width, length))
 
 elif input_method == "อัปโหลดไฟล์ CSV":
@@ -44,11 +54,17 @@ elif input_method == "อัปโหลดไฟล์ CSV":
         df_orders = pd.read_csv(uploaded_file)
         if "Width" in df_orders.columns and "Length" in df_orders.columns:
             orders = list(zip(df_orders["Width"], df_orders["Length"]))
+            if any(w > sheet_width or l > sheet_width for w, l in orders):
+                alert_flag = True
             st.dataframe(df_orders)
         else:
             st.error("⚠️ ไฟล์ CSV ต้องมีคอลัมน์ 'Width' และ 'Length'")
 
-if orders and st.button("🚀 คำนวณ"):
+# ✅ ถ้าผู้ใช้กรอกค่าผิดให้ขึ้น Alert และไม่ให้คำนวณ
+if alert_flag:
+    st.error("🚨 ไม่สามารถคำนวณได้: ขนาดของออเดอร์บางรายการใหญ่กว่าความกว้างของแผ่นเมทัลชีท")
+
+if orders and not alert_flag and st.button("🚀 คำนวณ"):
     results = {}
     algorithms = {
         "FFD Rotated": first_fit_decreasing_rotated,
@@ -58,6 +74,7 @@ if orders and st.button("🚀 คำนวณ"):
 
     kpi_rows = []
     total_used_area = sum(w * l for w, l in orders)  # คำนวณพื้นที่ที่ใช้งานจริงทั้งหมด
+    waste_values = {}
 
     for name, algo in algorithms.items():
         start_time = time.time()
@@ -71,6 +88,8 @@ if orders and st.button("🚀 คำนวณ"):
         total_sheet_area = sheet_width * total_length_used
         total_waste = max(0, total_sheet_area - total_used_area)
 
+        waste_values[name] = total_waste  # เก็บค่า Waste ของแต่ละ Alg
+
         kpi_rows.append({
             "Algorithm": name,
             "Total Length Used (cm)": round(total_length_used, 2),
@@ -79,6 +98,22 @@ if orders and st.button("🚀 คำนวณ"):
         })
 
         results[name] = bins
+
+    # ✅ คำนวณต้นทุนที่เสียไป
+    min_waste = min(waste_values.values())  # หาค่า Waste ที่ต่ำที่สุด
+    cost_lost_values = {}
+    
+    for name, waste in waste_values.items():
+        if all(w == min_waste for w in waste_values.values()):  # ถ้า Waste เท่ากันหมด
+            cost_lost = waste * price_per_m2 / 10_000  # แปลง cm² → m²
+        else:
+            cost_lost = (waste - min_waste) * price_per_m2 / 10_000  # คำนวณเฉพาะ Alg ที่ Waste มากกว่า
+
+        cost_lost_values[name] = cost_lost
+
+    # ✅ เพิ่มค่า "Cost Lost" ใน KPI Table
+    for row in kpi_rows:
+        row["Cost Lost (Baht)"] = f"{round(cost_lost_values[row['Algorithm']], 2):,}"
 
     st.session_state.kpi_df = pd.DataFrame(kpi_rows)
     st.session_state.results = results
