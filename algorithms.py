@@ -75,7 +75,7 @@ def guillotine_cutting_rotated(sheet_width, parts, sort_by="max_side"):
     return rows
 
 def plot_placements_shelf_matplotlib(bins, sheet_width, title):
-    """Visualize the cutting layout."""
+    """Visualize the cutting layout with color differentiation for rotated and non-rotated orders."""
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.set_xlim(0, sheet_width)
     y_offset = 0
@@ -85,16 +85,22 @@ def plot_placements_shelf_matplotlib(bins, sheet_width, title):
         max_height = max(h for _, h in bin)
 
         for w, h in bin:
-            rect = plt.Rectangle((x_offset, y_offset), w, h, edgecolor='black', facecolor=np.random.rand(3,))
+            # ✅ ตรวจสอบว่าออเดอร์นี้ถูกหมุนหรือไม่
+            rotated = w > h  # ถ้า w > h หมายถึงเกิดการ rotated
+
+            color = "red" if rotated else "blue"  # ใช้สีตาม rotation status
+            rect = plt.Rectangle((x_offset, y_offset), w, h, edgecolor='black', facecolor=color)
             ax.add_patch(rect)
             ax.text(x_offset + w / 2, y_offset + h / 2, f"{w}x{h}", ha='center', va='center', fontsize=8, color='white')
-            x_offset += w
 
-        y_offset += max_height
+            x_offset += w  # ขยับตำแหน่งสำหรับชิ้นถัดไป
+
+        y_offset += max_height  # ขยับไปแถวถัดไป
 
     ax.set_ylim(0, y_offset)
-    ax.set_xlabel("Width")
-    ax.set_ylabel("Length")
+    ax.set_xlabel("Width (cm)")
+    ax.set_ylabel("Used Length (cm)")
     ax.set_title(title)
     plt.gca().invert_yaxis()
     return fig
+
