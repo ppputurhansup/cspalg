@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 def check_collision(placements, x, y, w, h):
     """เช็คว่าชิ้น (x, y, w, h) ชนกับชิ้นอื่นหรือไม่"""
@@ -147,7 +148,7 @@ def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf'), sort_by
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Layout"):
+def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Layout", labels=None):
     max_y = max(p["y"] + p["height"] for p in placements)
     height_inches = max(6, min(20, max_y / 50))
 
@@ -155,11 +156,10 @@ def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Lay
     ax.set_xlim(0, sheet_width)
     ax.set_ylim(0, max_y)
 
-    # ✅ ลดความถี่แกน Y: แสดงทุก 200 cm
     ax.yaxis.set_major_locator(ticker.MultipleLocator(200))
     ax.tick_params(axis='y', labelsize=10)
 
-    for p in placements:
+    for i, p in enumerate(placements):
         color = 'red' if p["rotated"] else 'blue'
         rect = plt.Rectangle(
             (p["x"], p["y"]), p["width"], p["height"],
@@ -167,11 +167,12 @@ def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Lay
         )
         ax.add_patch(rect)
 
-        # ✅ แสดงขนาดทุกชิ้น ไม่ตัดทิ้ง
+        # ✅ ใช้ label ถ้ามี
+        label_text = labels[i] if labels and i < len(labels) else f'{int(p["width"])}x{int(p["height"])}'
         ax.text(
             p["x"] + p["width"] / 2,
             p["y"] + p["height"] / 2,
-            f'{int(p["width"])}x{int(p["height"])}',
+            label_text,
             ha='center', va='center',
             fontsize=8, color='white'
         )
