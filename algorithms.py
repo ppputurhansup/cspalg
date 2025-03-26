@@ -25,9 +25,9 @@ def first_fit_decreasing_2d(parts, sheet_width, y_step=5):
             w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
             max_y = 0 if not placements else max(p["y"] + p["height"] for p in placements)
 
-            for y in range(0, int(max_y) + 500, y_step):  # 🔄 แค่ความสูงจริง + เผื่อ
+            for y in range(0, int(max_y) + 500, y_step):
                 for x in range(0, int(sheet_width - w) + 1):
-                    if not check_collision(placements, x, y, w, h):
+                    if x + w <= sheet_width and not check_collision(placements, x, y, w, h):
                         placements.append({
                             "x": x,
                             "y": y,
@@ -59,12 +59,12 @@ def best_fit_decreasing_2d(parts, sheet_width, y_step=5):
 
             for y in range(0, int(max_y) + 500, y_step):
                 for x in range(0, int(sheet_width - w) + 1):
-                    if not check_collision(placements, x, y, w, h):
+                    if x + w <= sheet_width and not check_collision(placements, x, y, w, h):
                         if y + h < min_y:
                             min_y = y + h
                             best_pos = {"x": x, "y": y, "width": w, "height": h, "rotated": rotated}
                 if best_pos and min_y < y:
-                    break  # 🔄 ไม่ต้องวน y ต่อถ้าเจอที่ดีสุดแล้ว
+                    break
 
         if best_pos:
             placements.append(best_pos)
@@ -81,7 +81,8 @@ def guillotine_cutting_2d(parts, sheet_width):
         for i, rect in enumerate(free_rects):
             for rotated in [False, True]:
                 w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
-                if w <= rect["width"] and h <= rect["height"]:
+                fits_in_width = w <= rect["width"] and rect["x"] + w <= sheet_width
+                if fits_in_width and h <= rect["height"]:
                     placement = {
                         "x": rect["x"], "y": rect["y"],
                         "width": w, "height": h,
