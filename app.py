@@ -30,17 +30,27 @@ orders = []
 alert_flag = False
 df_orders = None
 
-if input_method == "กรอกข้อมูลเอง":
-    num_orders = st.number_input("จำนวนออเดอร์", min_value=1, step=1)
-    for i in range(num_orders):
-        col1, col2 = st.columns(2)
-        with col1:
-            width = st.number_input(f"🔹 ความกว้าง (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'w{i}')
-        with col2:
-            length = st.number_input(f"🔹 ความยาว (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'l{i}')
-        if width > sheet_width and length > sheet_width:
-            alert_flag = True
-        orders.append((width, length))
+manual_labels = []
+
+for i in range(num_orders):
+    col1, col2, col3 = st.columns([1, 1, 2])
+    with col1:
+        width = st.number_input(f"🔹 ความกว้าง (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'w{i}')
+    with col2:
+        length = st.number_input(f"🔹 ความยาว (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'l{i}')
+    with col3:
+        label = st.text_input(f"🏷️ Label ที่ {i+1}", value="", key=f'label{i}')
+
+    if width > sheet_width and length > sheet_width:
+        alert_flag = True
+    orders.append((width, length))
+
+    # ถ้าไม่กรอก label ให้ใช้ "WxL"
+    if label.strip() == "":
+        manual_labels.append(f"{int(width)}x{int(length)}")
+    else:
+        manual_labels.append(label)
+
 elif input_method == "อัปโหลดไฟล์ CSV":
     uploaded_file = st.file_uploader("📂 อัปโหลดไฟล์ CSV (ต้องมีคอลัมน์ 'Width' และ 'Length')", type="csv")
     if uploaded_file:
@@ -115,5 +125,9 @@ if st.session_state.calculated:
     elif input_method == "อัปโหลดไฟล์ CSV" and uploaded_file:
         labels = [f"{int(w)}x{int(h)}" for w, h in df_orders[["Width", "Length"]].values.tolist()]
 
-    fig = plot_placements_2d_matplotlib(st.session_state.results[selected_algo], sheet_width, labels=labels, title=selected_algo)
-    st.pyplot(fig, use_container_width=False)
+    fig = plot_placements_2d_matplotlib(
+    st.session_state.results[selected_algo],
+    sheet_width,
+    labels=manual_labels if input_method == "กรอกข้อมูลเอง" else labels,
+    title=selected_algo
+)
