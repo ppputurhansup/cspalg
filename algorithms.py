@@ -117,20 +117,34 @@ def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf'), sort_by
 def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Layout"):
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.set_xlim(0, sheet_width)
-    ax.set_ylim(0, max(p["y"] + p["height"] for p in placements) + 10)
 
+    # ใช้ความยาวที่ใช้จริง ไม่ต้อง +10
+    max_y = max(p["y"] + p["height"] for p in placements)
+    ax.set_ylim(0, max_y)
+
+    # 🔹 กำหนดระยะ tick ของแกน Y ให้สม่ำเสมอ
+    step = 10  # เปลี่ยนเป็น 20 ถ้าอยากให้ห่างกว่านี้
+    y_ticks = list(range(0, int(max_y) + step, step))
+    ax.set_yticks(y_ticks)
+
+    # 🔸 วาดสี่เหลี่ยมแต่ละออเดอร์
     for p in placements:
         color = 'red' if p["rotated"] else 'blue'
-        rect = plt.Rectangle((p["x"], p["y"]), p["width"], p["height"],
-                             edgecolor='black', facecolor=color, linewidth=1.5)
+        rect = plt.Rectangle(
+            (p["x"], p["y"]), p["width"], p["height"],
+            edgecolor='black', facecolor=color, linewidth=1.5
+        )
         ax.add_patch(rect)
-        ax.text(p["x"] + p["width"] / 2, p["y"] + p["height"] / 2,
-                f'{int(p["width"])}x{int(p["height"])}',
-                ha='center', va='center', fontsize=8, color='white')
+        ax.text(
+            p["x"] + p["width"] / 2,
+            p["y"] + p["height"] / 2,
+            f'{int(p["width"])}x{int(p["height"])}',
+            ha='center', va='center', fontsize=8, color='white'
+        )
 
     ax.set_title(title)
     ax.set_xlabel("Width (cm)")
     ax.set_ylabel("Length (cm)")
-    plt.gca().invert_yaxis()
-    plt.grid(True)
+    ax.invert_yaxis()  # แสดงจากบนลงล่างเหมือนในชีวิตจริง
+    ax.grid(True)
     return fig
