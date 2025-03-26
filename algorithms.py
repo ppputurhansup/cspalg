@@ -187,7 +187,7 @@ def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2
             p["y"] + p["height"] / 2,
             label_text,
             ha='center', va='center',
-            fontsize=8, color='white',
+            fontsize=14, color='white',
             fontproperties=thai_font  # ✅ ใช้ฟอนต์ภาษาไทย
         )
 
