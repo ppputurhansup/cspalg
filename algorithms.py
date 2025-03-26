@@ -149,16 +149,15 @@ def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Lay
     fig, ax = plt.subplots(figsize=(12, 6))
     ax.set_xlim(0, sheet_width)
 
-    # ใช้ความยาวที่ใช้จริง ไม่ต้อง +10
+    # ✅ ใช้ความสูงที่ใช้จริง และกำหนด step ที่เหมาะสม
     max_y = max(p["y"] + p["height"] for p in placements)
     ax.set_ylim(0, max_y)
 
-    # 🔹 กำหนดระยะ tick ของแกน Y ให้สม่ำเสมอ
-    step = 10  # เปลี่ยนเป็น 20 ถ้าอยากให้ห่างกว่านี้
-    y_ticks = list(range(0, int(max_y) + step, step))
-    ax.set_yticks(y_ticks)
+    # ✅ กำหนด tick ของแกน Y ให้ห่างกัน (เช่น ทุก 50 cm)
+    y_step = 50
+    ax.set_yticks(range(0, int(max_y) + y_step, y_step))
 
-    # 🔸 วาดสี่เหลี่ยมแต่ละออเดอร์
+    # ✅ วาดชิ้นงาน
     for p in placements:
         color = 'red' if p["rotated"] else 'blue'
         rect = plt.Rectangle(
@@ -176,6 +175,10 @@ def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Lay
     ax.set_title(title)
     ax.set_xlabel("Width (cm)")
     ax.set_ylabel("Length (cm)")
-    ax.invert_yaxis()  # แสดงจากบนลงล่างเหมือนในชีวิตจริง
+
+    # ✅ ทำให้อ่านง่าย + ดูเหมือนวางจากบนลงล่าง
+    ax.invert_yaxis()
+    ax.tick_params(axis='y', labelsize=10)
     ax.grid(True)
+
     return fig
