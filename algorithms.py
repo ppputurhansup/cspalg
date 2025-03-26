@@ -145,10 +145,8 @@ def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf'), sort_by
                 break
 
     return placements
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-
-def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Layout", labels=None):
+    
+def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2D Cutting Layout"):
     max_y = max(p["y"] + p["height"] for p in placements)
     height_inches = max(6, min(20, max_y / 50))
 
@@ -156,10 +154,11 @@ def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Lay
     ax.set_xlim(0, sheet_width)
     ax.set_ylim(0, max_y)
 
+    # ✅ ลดความถี่แกน Y: แสดงทุก 200 cm
     ax.yaxis.set_major_locator(ticker.MultipleLocator(200))
     ax.tick_params(axis='y', labelsize=10)
 
-    for i, p in enumerate(placements):
+    for idx, p in enumerate(placements):
         color = 'red' if p["rotated"] else 'blue'
         rect = plt.Rectangle(
             (p["x"], p["y"]), p["width"], p["height"],
@@ -167,8 +166,12 @@ def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Lay
         )
         ax.add_patch(rect)
 
-        # ✅ ใช้ label ถ้ามี
-        label_text = labels[i] if labels and i < len(labels) else f'{int(p["width"])}x{int(p["height"])}'
+        # ✅ ใช้ label ถ้ามี ไม่งั้น fallback เป็นขนาดจริง
+        if labels and idx < len(labels):
+            label_text = labels[idx]
+        else:
+            label_text = f"{int(p['width'])}x{int(p['height'])}"
+
         ax.text(
             p["x"] + p["width"] / 2,
             p["y"] + p["height"] / 2,
