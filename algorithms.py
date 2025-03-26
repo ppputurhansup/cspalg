@@ -148,20 +148,23 @@ def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf'), sort_by
     
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-import matplotlib.font_manager as fm
+from matplotlib.font_manager import FontProperties
+import os
 
 def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2D Cutting Layout"):
+    # ✅ โหลดฟอนต์ภาษาไทย
+    font_path = os.path.join(os.path.dirname(__file__), "NotoSansThai-Regular.ttf")
+    if os.path.exists(font_path):
+        thai_font = FontProperties(fname=font_path)
+    else:
+        thai_font = None  # fallback
+
     max_y = max(p["y"] + p["height"] for p in placements)
     height_inches = max(6, min(20, max_y / 50))
-
-    # 🔠 โหลดฟอนต์ภาษาไทย
-    font_path = "NotoSansThai-Regular.ttf"  # ไฟล์ต้องอยู่ใน directory เดียวกัน
-    thai_font = fm.FontProperties(fname=font_path)
-
     fig, ax = plt.subplots(figsize=(12, height_inches))
+
     ax.set_xlim(0, sheet_width)
     ax.set_ylim(0, max_y)
-
     ax.yaxis.set_major_locator(ticker.MultipleLocator(200))
     ax.tick_params(axis='y', labelsize=10)
 
@@ -173,7 +176,7 @@ def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2
         )
         ax.add_patch(rect)
 
-        # ✅ ใช้ label ถ้ามี ไม่งั้น fallback เป็นขนาดจริง
+        # ✅ เลือก label: ใช้ labels ถ้ามี ไม่งั้น fallback เป็นขนาดจริง
         if labels and idx < len(labels):
             label_text = labels[idx]
         else:
@@ -185,7 +188,7 @@ def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2
             label_text,
             ha='center', va='center',
             fontsize=8, color='white',
-            fontproperties=thai_font  # ✅ ใส่ฟอนต์ภาษาไทยตรงนี้
+            fontproperties=thai_font  # ✅ ใช้ฟอนต์ภาษาไทย
         )
 
     ax.set_title(title, fontsize=14, fontproperties=thai_font)
