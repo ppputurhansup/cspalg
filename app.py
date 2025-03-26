@@ -9,6 +9,9 @@ from algorithms import (
     plot_placements_2d_matplotlib
 )
 
+import time
+
+
 st.title("📦 Cutting Stock Problem Optimizer")
 
 if "calculated" not in st.session_state:
