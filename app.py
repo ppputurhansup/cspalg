@@ -9,11 +9,9 @@ from algorithms import (
     plot_placements_2d_matplotlib
 )
 
-import time
-
-
 st.title("📦 Cutting Stock Problem Optimizer")
 
+# Initialize session state
 if "calculated" not in st.session_state:
     st.session_state.calculated = False
 if "results" not in st.session_state:
@@ -21,12 +19,13 @@ if "results" not in st.session_state:
 if "kpi_df" not in st.session_state:
     st.session_state.kpi_df = pd.DataFrame()
 
+# Sidebar settings
 st.sidebar.header("⚙️ ตั้งค่าการตัด")
 sheet_width = st.sidebar.number_input("ความกว้างของแผ่นเมทัลชีท (cm)", min_value=10.0, value=91.4, step=0.1)
 price_per_meter = st.sidebar.number_input("💰 ราคาต่อหน่วย (บาท/เมตร)", min_value=0.1, value=100.0, step=0.1)
-price_per_m2 = price_per_meter / (sheet_width / 100)
-sort_strategy = st.sidebar.radio("เลือกกลยุทธ์การเรียงลำดับ", ["area", "max_side"])
+price_per_m2 = price_per_meter / (sheet_width / 100)  # แปลงเป็นบาท/ตร.เมตร
 
+# รับออเดอร์
 st.header("📥 เพิ่มออเดอร์")
 input_method = st.radio("เลือกวิธีกรอกข้อมูลออเดอร์", ["กรอกข้อมูลเอง", "อัปโหลดไฟล์ CSV"])
 orders = []
@@ -57,17 +56,19 @@ elif input_method == "อัปโหลดไฟล์ CSV":
         else:
             st.error("⚠️ ไฟล์ CSV ต้องมีคอลัมน์ 'Width' และ 'Length'")
 
+# ถ้ามีขนาดเกิน sheet_width ทั้งสองด้าน
 if alert_flag:
-    st.error("🚨 ไม่สามารถคำนวณได้: ขนาดของออเดอร์บางรายการมีทั้งกว้างและยาวใหญ่กว่าความกว้างของแผ่นเมทัลชีท")
+    st.error("🚨 ไม่สามารถคำนวณได้: มีออเดอร์ที่กว้างและยาวเกินความกว้างของแผ่นเมทัลชีท")
 
+# เริ่มคำนวณ
 if orders and not alert_flag and st.button("🚀 คำนวณ"):
-    results = {}
     algorithms = {
         "FFD 2D": first_fit_decreasing_2d,
         "BFD 2D": best_fit_decreasing_2d,
         "Guillotine 2D": guillotine_cutting_2d
     }
 
+    results = {}
     kpi_rows = []
     total_used_area = sum(w * l for w, l in orders)
     waste_values = {}
@@ -80,7 +81,6 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
         total_length_used = max(p["y"] + p["height"] for p in placements)
         total_sheet_area = sheet_width * total_length_used
         total_waste = max(0, total_sheet_area - total_used_area)
-
         waste_values[name] = total_waste
 
         kpi_rows.append({
@@ -92,6 +92,7 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
 
         results[name] = placements
 
+    # คำนวณ cost lost
     min_waste = min(waste_values.values())
     cost_lost_values = {}
 
@@ -109,6 +110,7 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
     st.session_state.results = results
     st.session_state.calculated = True
 
+# แสดงผลลัพธ์
 if st.session_state.calculated:
     st.subheader("📊 KPI Summary")
     st.dataframe(st.session_state.kpi_df)
