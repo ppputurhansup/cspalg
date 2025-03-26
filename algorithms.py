@@ -1,32 +1,29 @@
 import matplotlib.pyplot as plt
 
 def check_collision(placements, x, y, w, h):
-    """ตรวจสอบว่าชิ้น (x, y, w, h) ชนกับชิ้นอื่นใน placements หรือไม่"""
     for p in placements:
         if not (x + w <= p['x'] or x >= p['x'] + p['width'] or
                 y + h <= p['y'] or y >= p['y'] + p['height']):
             return True
     return False
 
-def first_fit_decreasing_2d(parts, sheet_width):
-    parts_sorted = sorted(parts, key=lambda x: max(x), reverse=True)
+def sort_parts(parts, strategy="max_side"):
+    if strategy == "max_side":
+        return sorted(parts, key=lambda x: max(x), reverse=True)
+    return parts
+
+def first_fit_decreasing_2d(parts, sheet_width, sort_by="max_side"):
+    parts_sorted = sort_parts(parts, sort_by)
     placements = []
 
     for part in parts_sorted:
         placed = False
         for rotated in [False, True]:
             w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
-
             for y in range(0, 10000):
                 for x in range(0, int(sheet_width - w) + 1):
                     if not check_collision(placements, x, y, w, h):
-                        placements.append({
-                            "x": x,
-                            "y": y,
-                            "width": w,
-                            "height": h,
-                            "rotated": rotated
-                        })
+                        placements.append({"x": x, "y": y, "width": w, "height": h, "rotated": rotated})
                         placed = True
                         break
                 if placed:
@@ -36,17 +33,15 @@ def first_fit_decreasing_2d(parts, sheet_width):
 
     return placements
 
-def best_fit_decreasing_2d(parts, sheet_width):
-    parts_sorted = sorted(parts, key=lambda x: max(x), reverse=True)
+def best_fit_decreasing_2d(parts, sheet_width, sort_by="max_side"):
+    parts_sorted = sort_parts(parts, sort_by)
     placements = []
 
     for part in parts_sorted:
         best_pos = None
         min_waste = float('inf')
-
         for rotated in [False, True]:
             w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
-
             for y in range(0, 10000):
                 for x in range(0, int(sheet_width - w) + 1):
                     if not check_collision(placements, x, y, w, h):
@@ -59,10 +54,10 @@ def best_fit_decreasing_2d(parts, sheet_width):
 
     return placements
 
-def guillotine_cutting_2d(parts, sheet_width):
-    parts_sorted = sorted(parts, key=lambda x: max(x), reverse=True)
+def guillotine_cutting_2d(parts, sheet_width, sort_by="max_side"):
+    parts_sorted = sort_parts(parts, sort_by)
     placements = []
-    free_rects = [{"x": 0, "y": 0, "width": sheet_width, "height": float('inf')}]  # เริ่มต้นมีแผ่นใหญ่ 1 แผ่น
+    free_rects = [{"x": 0, "y": 0, "width": sheet_width, "height": float('inf')}]
 
     for part in parts_sorted:
         placed = False
@@ -70,27 +65,11 @@ def guillotine_cutting_2d(parts, sheet_width):
             for rotated in [False, True]:
                 w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
                 if w <= rect["width"] and h <= rect["height"]:
-                    placement = {
-                        "x": rect["x"],
-                        "y": rect["y"],
-                        "width": w,
-                        "height": h,
-                        "rotated": rotated
-                    }
+                    placement = {"x": rect["x"], "y": rect["y"], "width": w, "height": h, "rotated": rotated}
                     placements.append(placement)
 
-                    right = {
-                        "x": rect["x"] + w,
-                        "y": rect["y"],
-                        "width": rect["width"] - w,
-                        "height": h
-                    }
-                    top = {
-                        "x": rect["x"],
-                        "y": rect["y"] + h,
-                        "width": rect["width"],
-                        "height": rect["height"] - h
-                    }
+                    right = {"x": rect["x"] + w, "y": rect["y"], "width": rect["width"] - w, "height": h}
+                    top = {"x": rect["x"], "y": rect["y"] + h, "width": rect["width"], "height": rect["height"] - h}
 
                     free_rects.pop(i)
                     if right["width"] > 0 and right["height"] > 0:
@@ -105,44 +84,28 @@ def guillotine_cutting_2d(parts, sheet_width):
 
     return placements
 
-def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf')):
+def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf'), sort_by="max_side"):
+    parts_sorted = sort_parts(parts, sort_by)
     placements = []
     free_rects = [{"x": 0, "y": 0, "width": sheet_width, "height": sheet_length}]
 
-    for part in parts:
+    for part in parts_sorted:
         placed = False
-
         for i, rect in enumerate(free_rects):
             for rotated in [False, True]:
                 w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
                 if w <= rect["width"] and h <= rect["height"]:
-                    placement = {
-                        "x": rect["x"],
-                        "y": rect["y"],
-                        "width": w,
-                        "height": h,
-                        "rotated": rotated
-                    }
+                    placement = {"x": rect["x"], "y": rect["y"], "width": w, "height": h, "rotated": rotated}
                     placements.append(placement)
 
-                    right_rect = {
-                        "x": rect["x"] + w,
-                        "y": rect["y"],
-                        "width": rect["width"] - w,
-                        "height": h
-                    }
-                    top_rect = {
-                        "x": rect["x"],
-                        "y": rect["y"] + h,
-                        "width": rect["width"],
-                        "height": rect["height"] - h
-                    }
+                    right = {"x": rect["x"] + w, "y": rect["y"], "width": rect["width"] - w, "height": h}
+                    top = {"x": rect["x"], "y": rect["y"] + h, "width": rect["width"], "height": rect["height"] - h}
 
                     free_rects.pop(i)
-                    if right_rect["width"] > 0 and right_rect["height"] > 0:
-                        free_rects.append(right_rect)
-                    if top_rect["width"] > 0 and top_rect["height"] > 0:
-                        free_rects.append(top_rect)
+                    if right["width"] > 0 and right["height"] > 0:
+                        free_rects.append(right)
+                    if top["width"] > 0 and top["height"] > 0:
+                        free_rects.append(top)
 
                     placed = True
                     break
@@ -158,17 +121,12 @@ def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Lay
 
     for p in placements:
         color = 'red' if p["rotated"] else 'blue'
-        rect = plt.Rectangle(
-            (p["x"], p["y"]), p["width"], p["height"],
-            edgecolor='black', facecolor=color, linewidth=1.5
-        )
+        rect = plt.Rectangle((p["x"], p["y"]), p["width"], p["height"],
+                             edgecolor='black', facecolor=color, linewidth=1.5)
         ax.add_patch(rect)
-        ax.text(
-            p["x"] + p["width"] / 2,
-            p["y"] + p["height"] / 2,
-            f'{int(p["width"])}x{int(p["height"])}',
-            ha='center', va='center', fontsize=8, color='white'
-        )
+        ax.text(p["x"] + p["width"] / 2, p["y"] + p["height"] / 2,
+                f'{int(p["width"])}x{int(p["height"])}',
+                ha='center', va='center', fontsize=8, color='white')
 
     ax.set_title(title)
     ax.set_xlabel("Width (cm)")
