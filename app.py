@@ -81,7 +81,7 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
 
     results = {}
     kpi_rows = []
-    total_used_area = sum(w * l for w, l in orders)
+    total_order_area = sum(w * l for w, l in orders)
 
     for name, algo in algorithms.items():
         start_time = time.time()
@@ -89,11 +89,11 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
         proc_time = time.time() - start_time
 
         total_length_used = max(p["y"] + p["height"] for p in placements)
-        total_sheet_area = sheet_width * total_length_used
-        total_waste = max(0, total_sheet_area - total_used_area)
+        total_used_area = sheet_width * total_length_used
+        total_waste = max(0, total_used_area - total_order_area)
 
-        material_cost = total_sheet_area * price_per_m2 / 10_000  # ต้นทุนวัสดุทั้งหมด
-        waste_cost = total_waste * price_per_m2 / 10_000          # ต้นทุนวัสดุที่เสีย
+        material_cost = total_used_area * price_per_m2 / 10_000
+        waste_cost = total_waste * price_per_m2 / 10_000
 
         kpi_rows.append({
             "Algorithm": name,
@@ -111,6 +111,7 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
     st.session_state.results = results
     st.session_state.labels = labels
     st.session_state.calculated = True
+
 
 
 # Show KPI and plot
