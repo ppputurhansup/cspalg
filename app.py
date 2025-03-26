@@ -117,4 +117,4 @@ if st.session_state.calculated:
 
     selected_algo = st.selectbox("🔍 เลือกอัลกอริทึมดู Visualization", list(st.session_state.results.keys()))
     fig = plot_placements_2d_matplotlib(st.session_state.results[selected_algo], sheet_width, selected_algo)
-    st.pyplot(fig)
+    st.pyplot(fig, use_container_width=False)
