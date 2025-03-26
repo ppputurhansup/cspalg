@@ -1,5 +1,3 @@
-import numpy as np
-import random
 import matplotlib.pyplot as plt
 
 def check_collision(placements, x, y, w, h):
@@ -152,9 +150,6 @@ def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf')):
                 break
 
     return placements
-
-
-import matplotlib.pyplot as plt
 
 def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Layout"):
     fig, ax = plt.subplots(figsize=(12, 6))
