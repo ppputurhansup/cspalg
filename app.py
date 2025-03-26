@@ -82,7 +82,6 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
     results = {}
     kpi_rows = []
     total_used_area = sum(w * l for w, l in orders)
-    waste_values = {}
 
     for name, algo in algorithms.items():
         start_time = time.time()
@@ -92,34 +91,27 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
         total_length_used = max(p["y"] + p["height"] for p in placements)
         total_sheet_area = sheet_width * total_length_used
         total_waste = max(0, total_sheet_area - total_used_area)
-        waste_values[name] = total_waste
+
+        material_cost = total_sheet_area * price_per_m2 / 10_000  # ต้นทุนวัสดุทั้งหมด
+        waste_cost = total_waste * price_per_m2 / 10_000          # ต้นทุนวัสดุที่เสีย
 
         kpi_rows.append({
             "Algorithm": name,
             "Total Length Used (cm)": round(total_length_used, 2),
+            "Total Used Area (cm²)": round(total_used_area, 2),
             "Total Waste (cm²)": round(total_waste, 2),
             "Processing Time (s)": round(proc_time, 6),
+            "Material Cost (Baht)": f"{material_cost:,.2f}",
+            "Waste Cost (Baht)": f"{waste_cost:,.2f}",
         })
 
         results[name] = placements
-
-    min_waste = min(waste_values.values())
-    cost_lost_values = {}
-
-    for name, waste in waste_values.items():
-        if all(w == min_waste for w in waste_values.values()):
-            cost_lost = waste * price_per_m2 / 10_000
-        else:
-            cost_lost = (waste - min_waste) * price_per_m2 / 10_000
-        cost_lost_values[name] = cost_lost
-
-    for row in kpi_rows:
-        row["Cost Lost (Baht)"] = f"{round(cost_lost_values[row['Algorithm']], 2):,}"
 
     st.session_state.kpi_df = pd.DataFrame(kpi_rows)
     st.session_state.results = results
     st.session_state.labels = labels
     st.session_state.calculated = True
+
 
 # Show KPI and plot
 if st.session_state.calculated:
