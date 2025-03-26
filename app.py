@@ -116,13 +116,14 @@ if st.session_state.calculated:
 
     selected_algo = st.selectbox("🔍 เลือกอัลกอริทึมดู Visualization", list(st.session_state.results.keys()))
 
-    # ✅ สร้าง Label
-    labels = [f"Part {i+1}" for i in range(len(orders))]
+    # ✅ เตรียม label ถ้ามีจากไฟล์ CSV
+    labels = None
+    if input_method == "อัปโหลดไฟล์ CSV" and uploaded_file and "Label" in df_orders.columns:
+        labels = df_orders["Label"].tolist()
+    elif input_method == "อัปโหลดไฟล์ CSV":
+        labels = [f"Part {i+1}" for i in range(len(st.session_state.results[selected_algo]))]
 
-    fig = plot_placements_2d_matplotlib(
-        st.session_state.results[selected_algo],
-        sheet_width,
-        selected_algo,
-        labels  # ✅ ส่ง label เข้าไปด้วย
-    )
-    st.pyplot(fig)
+    fig = plot_placements_2d_matplotlib(st.session_state.results[selected_algo], sheet_width, labels=labels, title=selected_algo)
+
+    # ✅ ใช้ full height ไม่บีบภาพ
+    st.pyplot(fig, use_container_width=False)
