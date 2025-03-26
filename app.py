@@ -110,11 +110,19 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
     st.session_state.results = results
     st.session_state.calculated = True
 
-# แสดงผลลัพธ์
 if st.session_state.calculated:
     st.subheader("📊 KPI Summary")
     st.dataframe(st.session_state.kpi_df)
 
     selected_algo = st.selectbox("🔍 เลือกอัลกอริทึมดู Visualization", list(st.session_state.results.keys()))
-    fig = plot_placements_2d_matplotlib(st.session_state.results[selected_algo], sheet_width, selected_algo)
-    st.pyplot(fig, use_container_width=False)
+
+    # ✅ สร้าง Label
+    labels = [f"Part {i+1}" for i in range(len(orders))]
+
+    fig = plot_placements_2d_matplotlib(
+        st.session_state.results[selected_algo],
+        sheet_width,
+        selected_algo,
+        labels  # ✅ ส่ง label เข้าไปด้วย
+    )
+    st.pyplot(fig)
