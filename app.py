@@ -115,7 +115,18 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
 
 # Show KPI and plot
 if st.session_state.calculated:
-    st.subheader("📊 KPI Summary")
+    st.subheader("📊 Summary (Algorithm & Area)")
+    st.dataframe(st.session_state.kpi_df, use_container_width=True, hide_index=True)
+    st.dataframe(st.session_state.kpi_df[[
+        "Algorithm", "Total Length Used (cm)",
+        "Total Used Area (cm²)", "Total Waste (cm²)", "Processing Time (s)"
+    ]], use_container_width=True, hide_index=True)
+    
+    st.subheader("💸 Cost Summary")
+    st.dataframe(st.session_state.kpi_df[[
+        "Algorithm", "Material Cost (Baht)", "Waste Cost (Baht)"
+    ]], use_container_width=True, hide_index=True)
+
     st.dataframe(st.session_state.kpi_df)
 
     selected_algo = st.selectbox("🔍 เลือกอัลกอริทึมดู Visualization", list(st.session_state.results.keys()))
