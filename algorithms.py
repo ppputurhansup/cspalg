@@ -146,39 +146,41 @@ def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf'), sort_by
     return placements
 
 def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Layout"):
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.set_xlim(0, sheet_width)
+    import matplotlib.ticker as ticker
 
-    # ✅ ใช้ความสูงที่ใช้จริง และกำหนด step ที่เหมาะสม
+    # 🔁 คำนวณขนาด layout ตามความยาวที่ใช้จริง
     max_y = max(p["y"] + p["height"] for p in placements)
+    height_inches = max(6, min(20, max_y / 50))  # Auto scale ความสูงกราฟ
+
+    fig, ax = plt.subplots(figsize=(12, height_inches))
+    ax.set_xlim(0, sheet_width)
     ax.set_ylim(0, max_y)
 
-    # ✅ กำหนด tick ของแกน Y ให้ห่างกัน (เช่น ทุก 50 cm)
-    y_step = 50
-    ax.set_yticks(range(0, int(max_y) + y_step, y_step))
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(100))
+    ax.yaxis.set_minor_locator(ticker.MultipleLocator(20))
+    ax.tick_params(axis='y', labelsize=10)
 
-    # ✅ วาดชิ้นงาน
-    for p in placements:
+    for i, p in enumerate(placements):
         color = 'red' if p["rotated"] else 'blue'
         rect = plt.Rectangle(
             (p["x"], p["y"]), p["width"], p["height"],
-            edgecolor='black', facecolor=color, linewidth=1.5
+            edgecolor='black', facecolor=color, linewidth=1.2
         )
         ax.add_patch(rect)
-        ax.text(
-            p["x"] + p["width"] / 2,
-            p["y"] + p["height"] / 2,
-            f'{int(p["width"])}x{int(p["height"])}',
-            ha='center', va='center', fontsize=8, color='white'
-        )
 
-    ax.set_title(title)
+        if p["width"] > 25 and p["height"] > 25 and i % 3 == 0:
+            ax.text(
+                p["x"] + p["width"] / 2,
+                p["y"] + p["height"] / 2,
+                f'{int(p["width"])}x{int(p["height"])}',
+                ha='center', va='center',
+                fontsize=8, color='white'
+            )
+
+    ax.set_title(title, fontsize=14)
     ax.set_xlabel("Width (cm)")
     ax.set_ylabel("Length (cm)")
-
-    # ✅ ทำให้อ่านง่าย + ดูเหมือนวางจากบนลงล่าง
     ax.invert_yaxis()
-    ax.tick_params(axis='y', labelsize=10)
-    ax.grid(True)
+    ax.grid(True, which='major', linestyle='--', alpha=0.5)
 
     return fig
