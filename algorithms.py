@@ -2,105 +2,182 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 
-def sort_parts(parts, strategy):
-    """Sort parts based on the given strategy."""
-    if strategy == 'area':
-        return sorted(parts, key=lambda x: x[0] * x[1], reverse=True)
-    elif strategy == 'max_side':
-        return sorted(parts, key=lambda x: max(x), reverse=True)
-    return parts
+def check_collision(placements, x, y, w, h):
+    """ตรวจสอบว่าชิ้น (x, y, w, h) ชนกับชิ้นอื่นใน placements หรือไม่"""
+    for p in placements:
+        if not (x + w <= p['x'] or x >= p['x'] + p['width'] or
+                y + h <= p['y'] or y >= p['y'] + p['height']):
+            return True
+    return False
 
-def first_fit_decreasing_rotated(sheet_width, parts, sort_by="max_side"):
-    """FFD algorithm with rotation support."""
-    parts = sort_parts(parts, sort_by)
-    bins = []
+def first_fit_decreasing_2d(parts, sheet_width):
+    parts_sorted = sorted(parts, key=lambda x: max(x), reverse=True)
+    placements = []
 
-    for part in parts:
-        w, h = part if part[0] <= part[1] else (part[1], part[0])
+    for part in parts_sorted:
         placed = False
+        for rotated in [False, True]:
+            w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
 
-        for bin in bins:
-            if sum(p[0] for p in bin) + w <= sheet_width:
-                bin.append((w, h))
-                placed = True
+            for y in range(0, 10000):
+                for x in range(0, int(sheet_width - w) + 1):
+                    if not check_collision(placements, x, y, w, h):
+                        placements.append({
+                            "x": x,
+                            "y": y,
+                            "width": w,
+                            "height": h,
+                            "rotated": rotated
+                        })
+                        placed = True
+                        break
+                if placed:
+                    break
+            if placed:
                 break
 
-        if not placed:
-            bins.append([(w, h)])
+    return placements
 
-    return bins
+def best_fit_decreasing_2d(parts, sheet_width):
+    parts_sorted = sorted(parts, key=lambda x: max(x), reverse=True)
+    placements = []
 
-def best_fit_decreasing_rotated(sheet_width, parts, sort_by="max_side"):
-    """BFD algorithm with rotation support."""
-    parts = sort_parts(parts, sort_by)
-    bins = []
+    for part in parts_sorted:
+        best_pos = None
+        min_waste = float('inf')
+
+        for rotated in [False, True]:
+            w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
+
+            for y in range(0, 10000):
+                for x in range(0, int(sheet_width - w) + 1):
+                    if not check_collision(placements, x, y, w, h):
+                        waste = y + h
+                        if waste < min_waste:
+                            best_pos = {"x": x, "y": y, "width": w, "height": h, "rotated": rotated}
+                            min_waste = waste
+        if best_pos:
+            placements.append(best_pos)
+
+    return placements
+
+def guillotine_cutting_2d(parts, sheet_width):
+    parts_sorted = sorted(parts, key=lambda x: max(x), reverse=True)
+    placements = []
+    free_rects = [{"x": 0, "y": 0, "width": sheet_width, "height": float('inf')}]  # เริ่มต้นมีแผ่นใหญ่ 1 แผ่น
+
+    for part in parts_sorted:
+        placed = False
+        for i, rect in enumerate(free_rects):
+            for rotated in [False, True]:
+                w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
+                if w <= rect["width"] and h <= rect["height"]:
+                    placement = {
+                        "x": rect["x"],
+                        "y": rect["y"],
+                        "width": w,
+                        "height": h,
+                        "rotated": rotated
+                    }
+                    placements.append(placement)
+
+                    right = {
+                        "x": rect["x"] + w,
+                        "y": rect["y"],
+                        "width": rect["width"] - w,
+                        "height": h
+                    }
+                    top = {
+                        "x": rect["x"],
+                        "y": rect["y"] + h,
+                        "width": rect["width"],
+                        "height": rect["height"] - h
+                    }
+
+                    free_rects.pop(i)
+                    if right["width"] > 0 and right["height"] > 0:
+                        free_rects.append(right)
+                    if top["width"] > 0 and top["height"] > 0:
+                        free_rects.append(top)
+
+                    placed = True
+                    break
+            if placed:
+                break
+
+    return placements
+
+def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf')):
+    placements = []
+    free_rects = [{"x": 0, "y": 0, "width": sheet_width, "height": sheet_length}]
 
     for part in parts:
-        w, h = part if part[0] <= part[1] else (part[1], part[0])
-        best_bin = None
-        min_space_left = float('inf')
+        placed = False
 
-        for bin in bins:
-            space_left = sheet_width - sum(p[0] for p in bin)
-            if space_left >= w and space_left < min_space_left:
-                best_bin = bin
-                min_space_left = space_left
+        for i, rect in enumerate(free_rects):
+            for rotated in [False, True]:
+                w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
+                if w <= rect["width"] and h <= rect["height"]:
+                    placement = {
+                        "x": rect["x"],
+                        "y": rect["y"],
+                        "width": w,
+                        "height": h,
+                        "rotated": rotated
+                    }
+                    placements.append(placement)
 
-        if best_bin is not None:
-            best_bin.append((w, h))
-        else:
-            bins.append([(w, h)])
+                    right_rect = {
+                        "x": rect["x"] + w,
+                        "y": rect["y"],
+                        "width": rect["width"] - w,
+                        "height": h
+                    }
+                    top_rect = {
+                        "x": rect["x"],
+                        "y": rect["y"] + h,
+                        "width": rect["width"],
+                        "height": rect["height"] - h
+                    }
 
-    return bins
+                    free_rects.pop(i)
+                    if right_rect["width"] > 0 and right_rect["height"] > 0:
+                        free_rects.append(right_rect)
+                    if top_rect["width"] > 0 and top_rect["height"] > 0:
+                        free_rects.append(top_rect)
 
-def guillotine_cutting_rotated(sheet_width, parts, sort_by="max_side"):
-    """Guillotine Cutting algorithm with rotation support."""
-    parts = sort_parts(parts, sort_by)
-    rows = []
-    remaining_parts = parts.copy()
+                    placed = True
+                    break
+            if placed:
+                break
 
-    while remaining_parts:
-        row_parts, row_height = [], 0
-        row_width = 0
-        for part in remaining_parts[:]:
-            w, h = part if part[0] <= part[1] else (part[1], part[0])
-            if row_width + w <= sheet_width:
-                row_parts.append((w, h))
-                row_width += w
-                row_height = max(row_height, h)
-                remaining_parts.remove(part)
+    return placements
 
-        rows.append(row_parts)
 
-    return rows
+import matplotlib.pyplot as plt
 
-def plot_placements_shelf_matplotlib(bins, sheet_width, title):
-    """Visualize the cutting layout with color differentiation for rotated and non-rotated orders."""
-    fig, ax = plt.subplots(figsize=(10, 5))
+def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Layout"):
+    fig, ax = plt.subplots(figsize=(12, 6))
     ax.set_xlim(0, sheet_width)
-    y_offset = 0
+    ax.set_ylim(0, max(p["y"] + p["height"] for p in placements) + 10)
 
-    for bin in bins:
-        x_offset = 0
-        max_height = max(h for _, h in bin)
+    for p in placements:
+        color = 'red' if p["rotated"] else 'blue'
+        rect = plt.Rectangle(
+            (p["x"], p["y"]), p["width"], p["height"],
+            edgecolor='black', facecolor=color, linewidth=1.5
+        )
+        ax.add_patch(rect)
+        ax.text(
+            p["x"] + p["width"] / 2,
+            p["y"] + p["height"] / 2,
+            f'{int(p["width"])}x{int(p["height"])}',
+            ha='center', va='center', fontsize=8, color='white'
+        )
 
-        for w, h in bin:
-            # ✅ ตรวจสอบว่าออเดอร์นี้ถูกหมุนหรือไม่
-            rotated = w > h  # ถ้า w > h หมายถึงเกิดการ rotated
-
-            color = "red" if rotated else "blue"  # ใช้สีตาม rotation status
-            rect = plt.Rectangle((x_offset, y_offset), w, h, edgecolor='black', facecolor=color)
-            ax.add_patch(rect)
-            ax.text(x_offset + w / 2, y_offset + h / 2, f"{w}x{h}", ha='center', va='center', fontsize=8, color='white')
-
-            x_offset += w  # ขยับตำแหน่งสำหรับชิ้นถัดไป
-
-        y_offset += max_height  # ขยับไปแถวถัดไป
-
-    ax.set_ylim(0, y_offset)
-    ax.set_xlabel("Width (cm)")
-    ax.set_ylabel("Used Length (cm)")
     ax.set_title(title)
+    ax.set_xlabel("Width (cm)")
+    ax.set_ylabel("Length (cm)")
     plt.gca().invert_yaxis()
+    plt.grid(True)
     return fig
-
