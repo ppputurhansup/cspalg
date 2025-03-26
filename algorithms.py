@@ -146,15 +146,22 @@ def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf'), sort_by
 
     return placements
     
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+import matplotlib.font_manager as fm
+
 def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2D Cutting Layout"):
     max_y = max(p["y"] + p["height"] for p in placements)
     height_inches = max(6, min(20, max_y / 50))
+
+    # 🔠 โหลดฟอนต์ภาษาไทย
+    font_path = "NotoSansThai-Regular.ttf"  # ไฟล์ต้องอยู่ใน directory เดียวกัน
+    thai_font = fm.FontProperties(fname=font_path)
 
     fig, ax = plt.subplots(figsize=(12, height_inches))
     ax.set_xlim(0, sheet_width)
     ax.set_ylim(0, max_y)
 
-    # ✅ ลดความถี่แกน Y: แสดงทุก 200 cm
     ax.yaxis.set_major_locator(ticker.MultipleLocator(200))
     ax.tick_params(axis='y', labelsize=10)
 
@@ -177,12 +184,13 @@ def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2
             p["y"] + p["height"] / 2,
             label_text,
             ha='center', va='center',
-            fontsize=8, color='white'
+            fontsize=8, color='white',
+            fontproperties=thai_font  # ✅ ใส่ฟอนต์ภาษาไทยตรงนี้
         )
 
-    ax.set_title(title, fontsize=14)
-    ax.set_xlabel("Width (cm)")
-    ax.set_ylabel("Length (cm)")
+    ax.set_title(title, fontsize=14, fontproperties=thai_font)
+    ax.set_xlabel("Width (cm)", fontproperties=thai_font)
+    ax.set_ylabel("Length (cm)", fontproperties=thai_font)
     ax.invert_yaxis()
     ax.grid(True, linestyle='--', alpha=0.5)
     return fig
