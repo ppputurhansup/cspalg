@@ -144,23 +144,22 @@ def place_parts_free_rect(parts, sheet_width, sheet_length=float('inf'), sort_by
                 break
 
     return placements
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Layout"):
-    import matplotlib.ticker as ticker
-
-    # 🔁 คำนวณขนาด layout ตามความยาวที่ใช้จริง
     max_y = max(p["y"] + p["height"] for p in placements)
-    height_inches = max(6, min(20, max_y / 50))  # Auto scale ความสูงกราฟ
+    height_inches = max(6, min(20, max_y / 50))
 
     fig, ax = plt.subplots(figsize=(12, height_inches))
     ax.set_xlim(0, sheet_width)
     ax.set_ylim(0, max_y)
 
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(100))
-    ax.yaxis.set_minor_locator(ticker.MultipleLocator(20))
+    # ✅ ลดความถี่แกน Y: แสดงทุก 200 cm
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(200))
     ax.tick_params(axis='y', labelsize=10)
 
-    for i, p in enumerate(placements):
+    for p in placements:
         color = 'red' if p["rotated"] else 'blue'
         rect = plt.Rectangle(
             (p["x"], p["y"]), p["width"], p["height"],
@@ -168,19 +167,18 @@ def plot_placements_2d_matplotlib(placements, sheet_width, title="2D Cutting Lay
         )
         ax.add_patch(rect)
 
-        if p["width"] > 25 and p["height"] > 25 and i % 3 == 0:
-            ax.text(
-                p["x"] + p["width"] / 2,
-                p["y"] + p["height"] / 2,
-                f'{int(p["width"])}x{int(p["height"])}',
-                ha='center', va='center',
-                fontsize=8, color='white'
-            )
+        # ✅ แสดงขนาดทุกชิ้น ไม่ตัดทิ้ง
+        ax.text(
+            p["x"] + p["width"] / 2,
+            p["y"] + p["height"] / 2,
+            f'{int(p["width"])}x{int(p["height"])}',
+            ha='center', va='center',
+            fontsize=8, color='white'
+        )
 
     ax.set_title(title, fontsize=14)
     ax.set_xlabel("Width (cm)")
     ax.set_ylabel("Length (cm)")
     ax.invert_yaxis()
-    ax.grid(True, which='major', linestyle='--', alpha=0.5)
-
+    ax.grid(True, linestyle='--', alpha=0.5)
     return fig
