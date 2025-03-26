@@ -127,7 +127,6 @@ if st.session_state.calculated:
         "Algorithm", "Material Cost (Baht)", "Waste Cost (Baht)"
     ]], use_container_width=True, hide_index=True)
 
-    st.dataframe(st.session_state.kpi_df)
 
     selected_algo = st.selectbox("🔍 เลือกอัลกอริทึมดู Visualization", list(st.session_state.results.keys()))
     fig = plot_placements_2d_matplotlib(
