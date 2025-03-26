@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 import streamlit as st
 import pandas as pd
@@ -12,6 +11,7 @@ from algorithms import (
 
 st.title("📦 Cutting Stock Problem Optimizer")
 
+# Initialize session state
 if "calculated" not in st.session_state:
     st.session_state.calculated = False
 if "results" not in st.session_state:
@@ -19,37 +19,34 @@ if "results" not in st.session_state:
 if "kpi_df" not in st.session_state:
     st.session_state.kpi_df = pd.DataFrame()
 
+# Sidebar settings
 st.sidebar.header("⚙️ ตั้งค่าการตัด")
 sheet_width = st.sidebar.number_input("ความกว้างของแผ่นเมทัลชีท (cm)", min_value=10.0, value=91.4, step=0.1)
 price_per_meter = st.sidebar.number_input("💰 ราคาต่อหน่วย (บาท/เมตร)", min_value=0.1, value=100.0, step=0.1)
 price_per_m2 = price_per_meter / (sheet_width / 100)
 
+# รับออเดอร์
 st.header("📥 เพิ่มออเดอร์")
 input_method = st.radio("เลือกวิธีกรอกข้อมูลออเดอร์", ["กรอกข้อมูลเอง", "อัปโหลดไฟล์ CSV"])
 orders = []
+labels = []
 alert_flag = False
-df_orders = None
 
-manual_labels = []
-
-for i in range(num_orders):
-    col1, col2, col3 = st.columns([1, 1, 2])
-    with col1:
-        width = st.number_input(f"🔹 ความกว้าง (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'w{i}')
-    with col2:
-        length = st.number_input(f"🔹 ความยาว (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'l{i}')
-    with col3:
-        label = st.text_input(f"🏷️ Label ที่ {i+1}", value="", key=f'label{i}')
-
-    if width > sheet_width and length > sheet_width:
-        alert_flag = True
-    orders.append((width, length))
-
-    # ถ้าไม่กรอก label ให้ใช้ "WxL"
-    if label.strip() == "":
-        manual_labels.append(f"{int(width)}x{int(length)}")
-    else:
-        manual_labels.append(label)
+if input_method == "กรอกข้อมูลเอง":
+    num_orders = st.number_input("จำนวนออเดอร์", min_value=1, step=1)
+    for i in range(num_orders):
+        col1, col2, col3 = st.columns([1, 1, 2])
+        with col1:
+            width = st.number_input(f"🔹 ความกว้าง (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'w{i}')
+        with col2:
+            length = st.number_input(f"🔹 ความยาว (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'l{i}')
+        with col3:
+            label = st.text_input(f"🏷️ Label ที่ {i+1}", value="", key=f'label{i}')
+        
+        if width > sheet_width and length > sheet_width:
+            alert_flag = True
+        orders.append((width, length))
+        labels.append(label.strip() if label.strip() != "" else f"{int(width)}x{int(length)}")
 
 elif input_method == "อัปโหลดไฟล์ CSV":
     uploaded_file = st.file_uploader("📂 อัปโหลดไฟล์ CSV (ต้องมีคอลัมน์ 'Width' และ 'Length')", type="csv")
@@ -59,6 +56,14 @@ elif input_method == "อัปโหลดไฟล์ CSV":
             orders = list(zip(df_orders["Width"], df_orders["Length"]))
             if any(w > sheet_width and l > sheet_width for w, l in orders):
                 alert_flag = True
+            if "Label" in df_orders.columns:
+                labels = df_orders["Label"].fillna("").tolist()
+                labels = [
+                    label.strip() if label.strip() != "" else f"{int(w)}x{int(l)}"
+                    for label, (w, l) in zip(labels, orders)
+                ]
+            else:
+                labels = [f"{int(w)}x{int(l)}" for w, l in orders]
             st.dataframe(df_orders)
         else:
             st.error("⚠️ ไฟล์ CSV ต้องมีคอลัมน์ 'Width' และ 'Length'")
@@ -66,6 +71,7 @@ elif input_method == "อัปโหลดไฟล์ CSV":
 if alert_flag:
     st.error("🚨 ไม่สามารถคำนวณได้: มีออเดอร์ที่กว้างและยาวเกินความกว้างของแผ่นเมทัลชีท")
 
+# เริ่มคำนวณ
 if orders and not alert_flag and st.button("🚀 คำนวณ"):
     algorithms = {
         "FFD 2D": first_fit_decreasing_2d,
@@ -99,6 +105,7 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
 
     min_waste = min(waste_values.values())
     cost_lost_values = {}
+
     for name, waste in waste_values.items():
         if all(w == min_waste for w in waste_values.values()):
             cost_lost = waste * price_per_m2 / 10_000
@@ -111,23 +118,19 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
 
     st.session_state.kpi_df = pd.DataFrame(kpi_rows)
     st.session_state.results = results
+    st.session_state.labels = labels
     st.session_state.calculated = True
 
+# Show KPI and plot
 if st.session_state.calculated:
     st.subheader("📊 KPI Summary")
     st.dataframe(st.session_state.kpi_df)
 
     selected_algo = st.selectbox("🔍 เลือกอัลกอริทึมดู Visualization", list(st.session_state.results.keys()))
-
-    labels = None
-    if input_method == "อัปโหลดไฟล์ CSV" and uploaded_file and "Label" in df_orders.columns:
-        labels = df_orders["Label"].tolist()
-    elif input_method == "อัปโหลดไฟล์ CSV" and uploaded_file:
-        labels = [f"{int(w)}x{int(h)}" for w, h in df_orders[["Width", "Length"]].values.tolist()]
-
     fig = plot_placements_2d_matplotlib(
-    st.session_state.results[selected_algo],
-    sheet_width,
-    labels=manual_labels if input_method == "กรอกข้อมูลเอง" else labels,
-    title=selected_algo
-)
+        st.session_state.results[selected_algo],
+        sheet_width,
+        labels=st.session_state.labels,
+        title=selected_algo
+    )
+    st.pyplot(fig, use_container_width=False)
