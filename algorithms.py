@@ -1,12 +1,9 @@
-# รวมโค้ด algorithms.py พร้อม validate_placements
-
-from collections import Counter
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.font_manager import FontProperties
 import os
 
-
+# ✅ ฟังก์ชันตรวจสอบการชนและไม่เกิน sheet width
 def safe_check_collision(placements, x, y, w, h, sheet_width):
     if x + w > sheet_width:
         return True
@@ -16,13 +13,39 @@ def safe_check_collision(placements, x, y, w, h, sheet_width):
         for p in placements
     )
 
+# ✅ ฟังก์ชันตรวจสอบความถูกต้องของ layout
+def is_valid_layout(placements, sheet_width):
+    for i, p1 in enumerate(placements):
+        if p1["x"] + p1["width"] > sheet_width:
+            return False
+        for j, p2 in enumerate(placements):
+            if i == j:
+                continue
+            overlap_x = not (p1["x"] + p1["width"] <= p2["x"] or p1["x"] >= p2["x"] + p2["width"])
+            overlap_y = not (p1["y"] + p1["height"] <= p2["y"] or p1["y"] >= p2["y"] + p2["height"])
+            if overlap_x and overlap_y:
+                return False
+    return True
 
+# ✅ ฟังก์ชันตรวจสอบว่าชิ้นงานถูกวางครบหรือไม่
+def check_all_orders_placed(placements, orders):
+    used = [False] * len(orders)
+    for p in placements:
+        for i, (w, h) in enumerate(orders):
+            match_normal = abs(p["width"] - w) < 1e-3 and abs(p["height"] - h) < 1e-3
+            match_rotated = abs(p["width"] - h) < 1e-3 and abs(p["height"] - w) < 1e-3
+            if (match_normal or match_rotated) and not used[i]:
+                used[i] = True
+                break
+    return all(used)
+
+# ✅ Sorting parts
 def sort_parts(parts, strategy="max_side"):
     if strategy == "max_side":
         return sorted(parts, key=lambda x: max(x), reverse=True)
     return parts
 
-
+# ✅ FFD Algorithm
 def first_fit_decreasing_2d(parts, sheet_width, y_step=5):
     parts_sorted = sort_parts(parts)
     placements = []
@@ -31,7 +54,7 @@ def first_fit_decreasing_2d(parts, sheet_width, y_step=5):
         placed = False
         for rotated in [False, True]:
             w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
-            max_y = 0 if not placements else max(p["y"] + p["height"] for p in placements)
+            max_y = max([p["y"] + p["height"] for p in placements], default=0)
 
             for y in range(0, int(max_y) + 500, y_step):
                 for x in range(0, int(sheet_width - w) + 1):
@@ -50,7 +73,7 @@ def first_fit_decreasing_2d(parts, sheet_width, y_step=5):
 
     return placements
 
-
+# ✅ BFD Algorithm
 def best_fit_decreasing_2d(parts, sheet_width, y_step=5):
     parts_sorted = sort_parts(parts)
     placements = []
@@ -61,14 +84,18 @@ def best_fit_decreasing_2d(parts, sheet_width, y_step=5):
 
         for rotated in [False, True]:
             w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
-            max_y = 0 if not placements else max(p["y"] + p["height"] for p in placements)
+            max_y = max([p["y"] + p["height"] for p in placements], default=0)
 
             for y in range(0, int(max_y) + 500, y_step):
                 for x in range(0, int(sheet_width - w) + 1):
                     if not safe_check_collision(placements, x, y, w, h, sheet_width):
                         if y + h < min_y:
                             min_y = y + h
-                            best_pos = {"x": x, "y": y, "width": w, "height": h, "rotated": rotated}
+                            best_pos = {
+                                "x": x, "y": y,
+                                "width": w, "height": h,
+                                "rotated": rotated
+                            }
                 if best_pos and min_y < y:
                     break
 
@@ -77,7 +104,7 @@ def best_fit_decreasing_2d(parts, sheet_width, y_step=5):
 
     return placements
 
-
+# ✅ Guillotine Algorithm
 def guillotine_cutting_2d(parts, sheet_width):
     parts_sorted = sort_parts(parts)
     placements = []
@@ -89,11 +116,21 @@ def guillotine_cutting_2d(parts, sheet_width):
             for rotated in [False, True]:
                 w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
                 if w <= rect["width"] and h <= rect["height"] and rect["x"] + w <= sheet_width:
-                    placement = {"x": rect["x"], "y": rect["y"], "width": w, "height": h, "rotated": rotated}
+                    placement = {
+                        "x": rect["x"], "y": rect["y"],
+                        "width": w, "height": h,
+                        "rotated": rotated
+                    }
                     placements.append(placement)
 
-                    right = {"x": rect["x"] + w, "y": rect["y"], "width": rect["width"] - w, "height": h}
-                    top = {"x": rect["x"], "y": rect["y"] + h, "width": rect["width"], "height": rect["height"] - h}
+                    right = {
+                        "x": rect["x"] + w, "y": rect["y"],
+                        "width": rect["width"] - w, "height": h
+                    }
+                    top = {
+                        "x": rect["x"], "y": rect["y"] + h,
+                        "width": rect["width"], "height": rect["height"] - h
+                    }
 
                     free_rects.pop(i)
                     if right["width"] > 0 and right["height"] > 0:
@@ -108,37 +145,7 @@ def guillotine_cutting_2d(parts, sheet_width):
 
     return placements
 
-
-def validate_placements(placements, orders, sheet_width, tolerance=0.01):
-    def parts_match(p1, p2):
-        return abs(p1[0] - p2[0]) <= tolerance and abs(p1[1] - p2[1]) <= tolerance
-
-    for p in placements:
-        if p['x'] + p['width'] > sheet_width + tolerance:
-            return False, ["Over width"]
-
-    for i in range(len(placements)):
-        for j in range(i + 1, len(placements)):
-            a = placements[i]
-            b = placements[j]
-            if not (a["x"] + a["width"] <= b["x"] or a["x"] >= b["x"] + b["width"] or
-                    a["y"] + a["height"] <= b["y"] or a["y"] >= b["y"] + b["height"]):
-                return False, ["Overlap"]
-
-    order_counts = Counter((round(w, 2), round(h, 2)) for w, h in orders)
-    placed_counts = Counter(
-        (round(p['width'], 2), round(p['height'], 2)) if not p['rotated']
-        else (round(p['height'], 2), round(p['width'], 2))
-        for p in placements
-    )
-
-    for size, count in order_counts.items():
-        if placed_counts[size] < count:
-            return False, ["Missing Orders"]
-
-    return True, []
-
-
+# ✅ Visualization function
 def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2D Cutting Layout"):
     font_path = os.path.join(os.path.dirname(__file__), "NotoSansThai-Regular.ttf")
     thai_font = FontProperties(fname=font_path) if os.path.exists(font_path) else None
