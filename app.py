@@ -6,9 +6,9 @@ from algorithms import (
     first_fit_decreasing_2d,
     best_fit_decreasing_2d,
     guillotine_cutting_2d,
-    plot_placements_2d_matplotlib
+    plot_placements_2d_matplotlib,
+    check_all_orders_placed  # ✅ ใช้ฟังก์ชันนี้เพื่อตรวจสอบออเดอร์
 )
-from algorithms import check_all_orders_placed
 
 st.title("📦 Cutting Stock Problem Optimizer")
 
@@ -74,10 +74,6 @@ if alert_flag:
 
 # เริ่มคำนวณ
 if orders and not alert_flag and st.button("🚀 คำนวณ"):
-    for idx, row in st.session_state.kpi_df.iterrows():
-        if row["All Orders Placed"] == "❌":
-            st.warning(f"⚠️ {row['Algorithm']} ไม่สามารถวางออเดอร์ครบทั้งหมดได้")
-
     algorithms = {
         "FFD 2D": first_fit_decreasing_2d,
         "BFD 2D": best_fit_decreasing_2d,
@@ -99,8 +95,8 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
 
         material_cost = total_used_area * price_per_m2 / 10_000
         waste_cost = total_waste * price_per_m2 / 10_000
-        is_complete = check_all_orders_placed(placements, orders)
-    
+        all_placed = check_all_orders_placed(placements, orders)
+
         kpi_rows.append({
             "Algorithm": name,
             "Total Length Used (cm)": round(total_length_used, 2),
@@ -109,33 +105,33 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
             "Processing Time (s)": round(proc_time, 6),
             "Material Cost (Baht)": f"{material_cost:,.2f}",
             "Waste Cost (Baht)": f"{waste_cost:,.2f}",
-            "All Orders Placed": "✅" if is_complete else "❌"
+            "All Orders Placed": "✅" if all_placed else "❌"
         })
+
         results[name] = placements
+
+    # เตือนถ้ามีอัลกอริทึมที่วางไม่ครบ
+    if any(row["All Orders Placed"] == "❌" for row in kpi_rows):
+        st.warning("⚠️ มีบางอัลกอริทึมที่ไม่สามารถวางออเดอร์ทั้งหมดได้ครบ โปรดตรวจสอบผลลัพธ์อีกครั้ง")
 
     st.session_state.kpi_df = pd.DataFrame(kpi_rows)
     st.session_state.results = results
     st.session_state.labels = labels
     st.session_state.calculated = True
 
-
-
 # Show KPI and plot
 if st.session_state.calculated:
     st.subheader("📊 Summary (Algorithm & Area)")
-
     st.dataframe(st.session_state.kpi_df[[
         "Algorithm", "Total Length Used (cm)",
         "Total Used Area (cm²)", "Total Waste (cm²)",
         "Processing Time (s)", "All Orders Placed"
     ]], use_container_width=True, hide_index=True)
 
-    
     st.subheader("💸 Cost Summary")
     st.dataframe(st.session_state.kpi_df[[
         "Algorithm", "Material Cost (Baht)", "Waste Cost (Baht)"
     ]], use_container_width=True, hide_index=True)
-
 
     selected_algo = st.selectbox("🔍 เลือกอัลกอริทึมดู Visualization", list(st.session_state.results.keys()))
     fig = plot_placements_2d_matplotlib(
