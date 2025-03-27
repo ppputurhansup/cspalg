@@ -96,7 +96,7 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
 
         material_cost = total_used_area * price_per_m2 / 10_000
         waste_cost = total_waste * price_per_m2 / 10_000
-        all_placed = check_all_orders_placed(placements, orders)
+        all_placed = validate_placements(placements, orders, sheet_width)
 
         kpi_rows.append({
             "Algorithm": name,
@@ -108,6 +108,7 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
             "Waste Cost (Baht)": f"{waste_cost:,.2f}",
             "All Orders Placed": "✅" if all_placed else "❌"
         })
+
 
         results[name] = placements
 
