@@ -163,3 +163,14 @@ def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2
     ax.invert_yaxis()
     ax.grid(True, linestyle='--', alpha=0.5)
     return fig
+
+def check_all_orders_placed(placements, orders):
+    """ตรวจสอบว่าชิ้นงานทั้งหมดถูกวางครบหรือไม่"""
+    placed_sizes = [(round(p["width"], 2), round(p["height"], 2)) for p in placements]
+    order_sizes = [(round(w, 2), round(h, 2)) for w, h in orders]
+
+    for size in order_sizes:
+        if placed_sizes.count(size) < order_sizes.count(size):
+            return False
+    return True
+
