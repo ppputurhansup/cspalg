@@ -16,13 +16,23 @@ def safe_check_collision(placements, x, y, w, h, sheet_width):
 # ✅ ฟังก์ชันเช็คว่าออเดอร์ทั้งหมดถูกวางหรือไม่
 def check_all_orders_placed(placements, orders):
     from collections import Counter
-    placed_parts = Counter((p["width"], p["height"]) for p in placements)
-    expected_parts = Counter((round(w, 2), round(h, 2)) for w, h in orders)
+    from math import isclose
 
-    for part, qty in expected_parts.items():
-        if placed_parts.get(part, 0) < qty:
+    placed_counter = Counter()
+    for p in placements:
+        dims = tuple(sorted([p['width'], p['height']]))
+        placed_counter[dims] += 1
+
+    order_counter = Counter()
+    for o in orders:
+        dims = tuple(sorted([o[0], o[1]]))
+        order_counter[dims] += 1
+
+    for dims, required_count in order_counter.items():
+        if placed_counter[dims] < required_count:
             return False
     return True
+
 
 # ✅ Sorting strategy
 def sort_parts(parts, strategy="max_side"):
