@@ -3,9 +3,7 @@ import streamlit as st
 import pandas as pd
 import time
 from algorithms import (
-    first_fit_decreasing_2d,
-    best_fit_decreasing_2d,
-    guillotine_cutting_2d,
+    shelf_based_layout,
     plot_placements_2d_matplotlib,
     check_all_orders_placed
 )
@@ -70,10 +68,11 @@ if alert_flag:
 
 if orders and not alert_flag and st.button("🚀 คำนวณ"):
     algorithms = {
-        "FFD 2D": first_fit_decreasing_2d,
-        "BFD 2D": best_fit_decreasing_2d,
-        "Guillotine 2D": guillotine_cutting_2d
+    "FFD 2D": shelf_based_layout,
+    "BFD 2D": shelf_based_layout,
+    "Guillotine 2D": shelf_based_layout
     }
+
 
     results = {}
     kpi_rows = []
