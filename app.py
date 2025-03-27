@@ -7,7 +7,8 @@ from algorithms import (
     best_fit_decreasing_2d,
     guillotine_cutting_2d,
     plot_placements_2d_matplotlib,
-    check_all_orders_placed
+    check_all_orders_placed,
+    match_labels_to_placements 
 )
 
 st.title("📦 Cutting Stock Problem Optimizer")
@@ -133,10 +134,16 @@ if st.session_state.calculated:
     ]], use_container_width=True, hide_index=True)
 
     selected_algo = st.selectbox("🔍 เลือกอัลกอริทึมดู Visualization", list(st.session_state.results.keys()))
+    labels_matched = match_labels_to_placements(
+    st.session_state.results[selected_algo],
+    orders,
+    st.session_state.labels
+    )
+
     fig = plot_placements_2d_matplotlib(
         st.session_state.results[selected_algo],
         sheet_width,
-        labels=st.session_state.labels,
+        labels=labels_matched,
         title=selected_algo
     )
     st.pyplot(fig, use_container_width=False)
