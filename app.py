@@ -7,8 +7,7 @@ from algorithms import (
     best_fit_decreasing_2d,
     guillotine_cutting_2d,
     plot_placements_2d_matplotlib,
-
-    validate_placements# ✅ ใช้ฟังก์ชันนี้เพื่อตรวจสอบออเดอร์
+    check_all_orders_placed  # ✅ ใหม่
 )
 
 st.title("📦 Cutting Stock Problem Optimizer")
@@ -96,7 +95,8 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
 
         material_cost = total_used_area * price_per_m2 / 10_000
         waste_cost = total_waste * price_per_m2 / 10_000
-        all_placed = validate_placements(placements, orders, sheet_width)
+
+        all_placed = check_all_orders_placed(placements, orders)
 
         kpi_rows.append({
             "Algorithm": name,
@@ -109,12 +109,7 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
             "All Orders Placed": "✅" if all_placed else "❌"
         })
 
-
         results[name] = placements
-
-    # เตือนถ้ามีอัลกอริทึมที่วางไม่ครบ
-    if any(row["All Orders Placed"] == "❌" for row in kpi_rows):
-        st.warning("⚠️ มีบางอัลกอริทึมที่ไม่สามารถวางออเดอร์ทั้งหมดได้ครบ โปรดตรวจสอบผลลัพธ์อีกครั้ง")
 
     st.session_state.kpi_df = pd.DataFrame(kpi_rows)
     st.session_state.results = results
@@ -124,12 +119,15 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
 # Show KPI and plot
 if st.session_state.calculated:
     st.subheader("📊 Summary (Algorithm & Area)")
-    st.dataframe(st.session_state.kpi_df[[
-        "Algorithm", "Total Length Used (cm)",
-        "Total Used Area (cm²)", "Total Waste (cm²)",
-        "Processing Time (s)", "All Orders Placed"
-    ]], use_container_width=True, hide_index=True)
-
+    st.dataframe(
+        st.session_state.kpi_df[[
+            "Algorithm", "Total Length Used (cm)",
+            "Total Used Area (cm²)", "Total Waste (cm²)",
+            "Processing Time (s)", "All Orders Placed"
+        ]],
+        use_container_width=True, hide_index=True
+    )
+    
     st.subheader("💸 Cost Summary")
     st.dataframe(st.session_state.kpi_df[[
         "Algorithm", "Material Cost (Baht)", "Waste Cost (Baht)"
