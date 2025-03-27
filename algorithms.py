@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.font_manager import FontProperties
@@ -6,27 +5,13 @@ import os
 
 # ✅ ฟังก์ชันตรวจสอบการชนและไม่เกิน sheet width
 def safe_check_collision(placements, x, y, w, h, sheet_width):
-    if x + w > sheet_width:
+    if x < 0 or y < 0 or x + w > sheet_width:
         return True
     return any(
         not (x + w <= p['x'] or x >= p['x'] + p['width'] or
              y + h <= p['y'] or y >= p['y'] + p['height'])
         for p in placements
     )
-
-# ✅ ฟังก์ชันตรวจสอบความถูกต้องของ layout
-def is_valid_layout(placements, sheet_width):
-    for i, p1 in enumerate(placements):
-        if p1["x"] + p1["width"] > sheet_width:
-            return False
-        for j, p2 in enumerate(placements):
-            if i == j:
-                continue
-            overlap_x = not (p1["x"] + p1["width"] <= p2["x"] or p1["x"] >= p2["x"] + p2["width"])
-            overlap_y = not (p1["y"] + p1["height"] <= p2["y"] or p1["y"] >= p2["y"] + p2["height"])
-            if overlap_x and overlap_y:
-                return False
-    return True
 
 # ✅ ฟังก์ชันตรวจสอบว่าชิ้นงานถูกวางครบหรือไม่
 def check_all_orders_placed(placements, orders):
@@ -40,13 +25,11 @@ def check_all_orders_placed(placements, orders):
                 break
     return all(used)
 
-# ✅ Sorting parts
 def sort_parts(parts, strategy="max_side"):
     if strategy == "max_side":
         return sorted(parts, key=lambda x: max(x), reverse=True)
     return parts
 
-# ✅ FFD Algorithm
 def first_fit_decreasing_2d(parts, sheet_width, y_step=5):
     parts_sorted = sort_parts(parts)
     placements = []
@@ -74,7 +57,6 @@ def first_fit_decreasing_2d(parts, sheet_width, y_step=5):
 
     return placements
 
-# ✅ BFD Algorithm
 def best_fit_decreasing_2d(parts, sheet_width, y_step=5):
     parts_sorted = sort_parts(parts)
     placements = []
@@ -105,7 +87,6 @@ def best_fit_decreasing_2d(parts, sheet_width, y_step=5):
 
     return placements
 
-# ✅ Guillotine Algorithm
 def guillotine_cutting_2d(parts, sheet_width):
     parts_sorted = sort_parts(parts)
     placements = []
@@ -146,7 +127,6 @@ def guillotine_cutting_2d(parts, sheet_width):
 
     return placements
 
-# ✅ Visualization function
 def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2D Cutting Layout"):
     font_path = os.path.join(os.path.dirname(__file__), "NotoSansThai-Regular.ttf")
     thai_font = FontProperties(fname=font_path) if os.path.exists(font_path) else None
