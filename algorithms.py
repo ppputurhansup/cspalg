@@ -3,7 +3,7 @@ import matplotlib.ticker as ticker
 from matplotlib.font_manager import FontProperties
 import os
 
-# ✅ ฟังก์ชันใหม่: ตรวจสอบการชนและไม่ให้เกิน sheet width
+# ✅ ฟังก์ชันตรวจสอบการชนและไม่ให้เกิน sheet_width
 def safe_check_collision(placements, x, y, w, h, sheet_width):
     if x + w > sheet_width:
         return True
@@ -13,13 +13,26 @@ def safe_check_collision(placements, x, y, w, h, sheet_width):
         for p in placements
     )
 
+# ✅ ฟังก์ชันเช็คว่าออเดอร์ทั้งหมดถูกวางหรือไม่
+def check_all_orders_placed(placements, orders):
+    from collections import Counter
+    placed_parts = Counter((p["width"], p["height"]) for p in placements)
+    expected_parts = Counter((round(w, 2), round(h, 2)) for w, h in orders)
+
+    for part, qty in expected_parts.items():
+        if placed_parts.get(part, 0) < qty:
+            return False
+    return True
+
+# ✅ Sorting strategy
 def sort_parts(parts, strategy="max_side"):
     if strategy == "max_side":
         return sorted(parts, key=lambda x: max(x), reverse=True)
     return parts
 
+# ✅ FFD
 def first_fit_decreasing_2d(parts, sheet_width, y_step=5):
-    parts_sorted = sorted(parts, key=lambda x: max(x), reverse=True)
+    parts_sorted = sort_parts(parts)
     placements = []
 
     for part in parts_sorted:
@@ -32,11 +45,7 @@ def first_fit_decreasing_2d(parts, sheet_width, y_step=5):
                 for x in range(0, int(sheet_width - w) + 1):
                     if not safe_check_collision(placements, x, y, w, h, sheet_width):
                         placements.append({
-                            "x": x,
-                            "y": y,
-                            "width": w,
-                            "height": h,
-                            "rotated": rotated
+                            "x": x, "y": y, "width": w, "height": h, "rotated": rotated
                         })
                         placed = True
                         break
@@ -47,8 +56,9 @@ def first_fit_decreasing_2d(parts, sheet_width, y_step=5):
 
     return placements
 
+# ✅ BFD
 def best_fit_decreasing_2d(parts, sheet_width, y_step=5):
-    parts_sorted = sorted(parts, key=lambda x: max(x), reverse=True)
+    parts_sorted = sort_parts(parts)
     placements = []
 
     for part in parts_sorted:
@@ -73,8 +83,9 @@ def best_fit_decreasing_2d(parts, sheet_width, y_step=5):
 
     return placements
 
+# ✅ Guillotine
 def guillotine_cutting_2d(parts, sheet_width):
-    parts_sorted = sorted(parts, key=lambda x: max(x), reverse=True)
+    parts_sorted = sort_parts(parts)
     placements = []
     free_rects = [{"x": 0, "y": 0, "width": sheet_width, "height": float('inf')}]
 
@@ -84,21 +95,14 @@ def guillotine_cutting_2d(parts, sheet_width):
             for rotated in [False, True]:
                 w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
                 if w <= rect["width"] and h <= rect["height"] and rect["x"] + w <= sheet_width:
-                    placement = {
+                    placements.append({
                         "x": rect["x"], "y": rect["y"],
                         "width": w, "height": h,
                         "rotated": rotated
-                    }
-                    placements.append(placement)
+                    })
 
-                    right = {
-                        "x": rect["x"] + w, "y": rect["y"],
-                        "width": rect["width"] - w, "height": h
-                    }
-                    top = {
-                        "x": rect["x"], "y": rect["y"] + h,
-                        "width": rect["width"], "height": rect["height"] - h
-                    }
+                    right = {"x": rect["x"] + w, "y": rect["y"], "width": rect["width"] - w, "height": h}
+                    top = {"x": rect["x"], "y": rect["y"] + h, "width": rect["width"], "height": rect["height"] - h}
 
                     free_rects.pop(i)
                     if right["width"] > 0 and right["height"] > 0:
@@ -113,6 +117,7 @@ def guillotine_cutting_2d(parts, sheet_width):
 
     return placements
 
+# ✅ Plotting function
 def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2D Cutting Layout"):
     font_path = os.path.join(os.path.dirname(__file__), "NotoSansThai-Regular.ttf")
     thai_font = FontProperties(fname=font_path) if os.path.exists(font_path) else None
@@ -128,21 +133,14 @@ def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2
 
     for idx, p in enumerate(placements):
         color = 'red' if p["rotated"] else 'blue'
-        rect = plt.Rectangle(
-            (p["x"], p["y"]), p["width"], p["height"],
-            edgecolor='black', facecolor=color, linewidth=1.2
-        )
+        rect = plt.Rectangle((p["x"], p["y"]), p["width"], p["height"],
+                             edgecolor='black', facecolor=color, linewidth=1.2)
         ax.add_patch(rect)
 
         label_text = labels[idx] if labels and idx < len(labels) else f"{int(p['width'])}x{int(p['height'])}"
-        ax.text(
-            p["x"] + p["width"] / 2,
-            p["y"] + p["height"] / 2,
-            label_text,
-            ha='center', va='center',
-            fontsize=14, color='white',
-            fontproperties=thai_font
-        )
+        ax.text(p["x"] + p["width"] / 2, p["y"] + p["height"] / 2, label_text,
+                ha='center', va='center', fontsize=14, color='white',
+                fontproperties=thai_font)
 
     ax.set_title(title, fontsize=14, fontproperties=thai_font)
     ax.set_xlabel("Width (cm)", fontproperties=thai_font)
