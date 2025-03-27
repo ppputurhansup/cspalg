@@ -1,61 +1,80 @@
-
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.font_manager import FontProperties
 import os
 
+# ✅ ฟังก์ชันจัดเรียง parts ตามกลยุทธ์ต่างๆ
 def sort_parts(parts, strategy="max_side"):
     if strategy == "max_side":
         return sorted(parts, key=lambda x: max(x), reverse=True)
+    elif strategy == "area":
+        return sorted(parts, key=lambda x: x[0] * x[1], reverse=True)
+    elif strategy == "width":
+        return sorted(parts, key=lambda x: x[0], reverse=True)
     return parts
 
-def shelf_based_layout(parts, sheet_width, strategy="max_side"):
-    parts = sort_parts(parts, strategy)
+# ✅ ฟังก์ชันหลักสำหรับ layout แบบ shelf-based
+def shelf_based_layout(parts, sheet_width, sort_strategy="max_side"):
+    parts = sort_parts(parts, strategy=sort_strategy)
     placements = []
     y_offset = 0
     shelf_height = 0
     current_shelf = []
 
     for part in parts:
-        best_placement = None
+        placed = False
         for rotated in [False, True]:
             w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
             x_offset = sum(p["width"] for p in current_shelf)
 
             if x_offset + w <= sheet_width:
-                best_placement = {"x": x_offset, "y": y_offset, "width": w, "height": h, "rotated": rotated}
+                placement = {
+                    "x": x_offset,
+                    "y": y_offset,
+                    "width": w,
+                    "height": h,
+                    "rotated": rotated
+                }
+                placements.append(placement)
+                current_shelf.append(placement)
+                shelf_height = max(shelf_height, h)
+                placed = True
                 break
 
-        if best_placement:
-            placements.append(best_placement)
-            current_shelf.append(best_placement)
-            shelf_height = max(shelf_height, best_placement["height"])
-        else:
+        if not placed:
             y_offset += shelf_height
-            current_shelf = []
             shelf_height = 0
+            current_shelf = []
             for rotated in [False, True]:
                 w, h = (part[0], part[1]) if not rotated else (part[1], part[0])
                 if w <= sheet_width:
-                    best_placement = {"x": 0, "y": y_offset, "width": w, "height": h, "rotated": rotated}
+                    placement = {
+                        "x": 0,
+                        "y": y_offset,
+                        "width": w,
+                        "height": h,
+                        "rotated": rotated
+                    }
+                    placements.append(placement)
+                    current_shelf.append(placement)
+                    shelf_height = h
                     break
-            if best_placement:
-                placements.append(best_placement)
-                current_shelf.append(best_placement)
-                shelf_height = best_placement["height"]
+
     return placements
 
-# ✅ สามอัลกอริทึมใช้ shelf_based_layout
+# ✅ อัลกอริทึม FFD 2D (เรียง max side)
 def first_fit_decreasing_2d(parts, sheet_width):
-    return shelf_based_layout(parts, sheet_width, strategy="max_side")
+    return shelf_based_layout(parts, sheet_width, sort_strategy="max_side")
 
+# ✅ อัลกอริทึม BFD 2D (เรียง area)
 def best_fit_decreasing_2d(parts, sheet_width):
-    return shelf_based_layout(parts, sheet_width, strategy="area")
+    return shelf_based_layout(parts, sheet_width, sort_strategy="area")
 
+# ✅ อัลกอริทึม Guillotine 2D (เรียง width)
 def guillotine_cutting_2d(parts, sheet_width):
-    return shelf_based_layout(parts, sheet_width, strategy="area")
+    return shelf_based_layout(parts, sheet_width, sort_strategy="width")
 
-# ✅ ตรวจสอบว่าชิ้นงานถูกวางครบหรือไม่
+# ✅ ฟังก์ชันเช็คว่าชิ้นงานถูกวางครบไหม
 def check_all_orders_placed(placements, orders):
     used = [False] * len(orders)
     for p in placements:
@@ -67,7 +86,7 @@ def check_all_orders_placed(placements, orders):
                 break
     return all(used)
 
-# ✅ Visualization
+# ✅ ฟังก์ชันวาด layout
 def plot_placements_2d_matplotlib(placements, sheet_width, labels=None, title="2D Cutting Layout"):
     font_path = os.path.join(os.path.dirname(__file__), "NotoSansThai-Regular.ttf")
     thai_font = FontProperties(fname=font_path) if os.path.exists(font_path) else None
