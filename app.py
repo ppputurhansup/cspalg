@@ -7,7 +7,8 @@ from algorithms import (
     best_fit_decreasing_2d,
     guillotine_cutting_2d,
     plot_placements_2d_matplotlib,
-    check_all_orders_placed  # ✅ ใช้ฟังก์ชันนี้เพื่อตรวจสอบออเดอร์
+
+    validate_placements# ✅ ใช้ฟังก์ชันนี้เพื่อตรวจสอบออเดอร์
 )
 
 st.title("📦 Cutting Stock Problem Optimizer")
