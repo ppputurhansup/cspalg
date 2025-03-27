@@ -7,12 +7,11 @@ from algorithms import (
     best_fit_decreasing_2d,
     guillotine_cutting_2d,
     plot_placements_2d_matplotlib,
-    check_all_orders_placed  # ✅ ใหม่
+    check_all_orders_placed
 )
 
 st.title("📦 Cutting Stock Problem Optimizer")
 
-# Initialize session state
 if "calculated" not in st.session_state:
     st.session_state.calculated = False
 if "results" not in st.session_state:
@@ -20,13 +19,11 @@ if "results" not in st.session_state:
 if "kpi_df" not in st.session_state:
     st.session_state.kpi_df = pd.DataFrame()
 
-# Sidebar settings
 st.sidebar.header("⚙️ ตั้งค่าการตัด")
 sheet_width = st.sidebar.number_input("ความกว้างของแผ่นเมทัลชีท (cm)", min_value=10.0, value=91.4, step=0.1)
 price_per_meter = st.sidebar.number_input("💰 ราคาต่อหน่วย (บาท/เมตร)", min_value=0.1, value=100.0, step=0.1)
 price_per_m2 = price_per_meter / (sheet_width / 100)
 
-# รับออเดอร์
 st.header("📥 เพิ่มออเดอร์")
 input_method = st.radio("เลือกวิธีกรอกข้อมูลออเดอร์", ["กรอกข้อมูลเอง", "อัปโหลดไฟล์ CSV"])
 orders = []
@@ -43,7 +40,6 @@ if input_method == "กรอกข้อมูลเอง":
             length = st.number_input(f"🔹 ความยาว (cm) ที่ {i+1}", min_value=1.0, step=0.1, key=f'l{i}')
         with col3:
             label = st.text_input(f"🏷️ Label ที่ {i+1}", value="", key=f'label{i}')
-        
         if width > sheet_width and length > sheet_width:
             alert_flag = True
         orders.append((width, length))
@@ -72,7 +68,6 @@ elif input_method == "อัปโหลดไฟล์ CSV":
 if alert_flag:
     st.error("🚨 ไม่สามารถคำนวณได้: มีออเดอร์ที่กว้างและยาวเกินความกว้างของแผ่นเมทัลชีท")
 
-# เริ่มคำนวณ
 if orders and not alert_flag and st.button("🚀 คำนวณ"):
     algorithms = {
         "FFD 2D": first_fit_decreasing_2d,
@@ -116,7 +111,6 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
     st.session_state.labels = labels
     st.session_state.calculated = True
 
-# Show KPI and plot
 if st.session_state.calculated:
     st.subheader("📊 Summary (Algorithm & Area)")
     st.dataframe(
