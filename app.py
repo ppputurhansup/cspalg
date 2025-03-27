@@ -3,13 +3,16 @@ import streamlit as st
 import pandas as pd
 import time
 from algorithms import (
-    shelf_based_layout,
+    first_fit_decreasing_2d,
+    best_fit_decreasing_2d,
+    guillotine_cutting_2d,
     plot_placements_2d_matplotlib,
     check_all_orders_placed
 )
 
 st.title("📦 Cutting Stock Problem Optimizer")
 
+# Session state
 if "calculated" not in st.session_state:
     st.session_state.calculated = False
 if "results" not in st.session_state:
@@ -17,11 +20,13 @@ if "results" not in st.session_state:
 if "kpi_df" not in st.session_state:
     st.session_state.kpi_df = pd.DataFrame()
 
+# Sidebar config
 st.sidebar.header("⚙️ ตั้งค่าการตัด")
 sheet_width = st.sidebar.number_input("ความกว้างของแผ่นเมทัลชีท (cm)", min_value=10.0, value=91.4, step=0.1)
 price_per_meter = st.sidebar.number_input("💰 ราคาต่อหน่วย (บาท/เมตร)", min_value=0.1, value=100.0, step=0.1)
 price_per_m2 = price_per_meter / (sheet_width / 100)
 
+# รับออเดอร์
 st.header("📥 เพิ่มออเดอร์")
 input_method = st.radio("เลือกวิธีกรอกข้อมูลออเดอร์", ["กรอกข้อมูลเอง", "อัปโหลดไฟล์ CSV"])
 orders = []
@@ -41,7 +46,7 @@ if input_method == "กรอกข้อมูลเอง":
         if width > sheet_width and length > sheet_width:
             alert_flag = True
         orders.append((width, length))
-        labels.append(label.strip() if label.strip() != "" else f"{int(width)}x{int(length)}")
+        labels.append(label.strip() if label.strip() else f"{int(width)}x{int(length)}")
 
 elif input_method == "อัปโหลดไฟล์ CSV":
     uploaded_file = st.file_uploader("📂 อัปโหลดไฟล์ CSV (ต้องมีคอลัมน์ 'Width' และ 'Length')", type="csv")
@@ -54,7 +59,7 @@ elif input_method == "อัปโหลดไฟล์ CSV":
             if "Label" in df_orders.columns:
                 labels = df_orders["Label"].fillna("").tolist()
                 labels = [
-                    label.strip() if label.strip() != "" else f"{int(w)}x{int(l)}"
+                    label.strip() if label.strip() else f"{int(w)}x{int(l)}"
                     for label, (w, l) in zip(labels, orders)
                 ]
             else:
@@ -66,13 +71,13 @@ elif input_method == "อัปโหลดไฟล์ CSV":
 if alert_flag:
     st.error("🚨 ไม่สามารถคำนวณได้: มีออเดอร์ที่กว้างและยาวเกินความกว้างของแผ่นเมทัลชีท")
 
+# คำนวณ
 if orders and not alert_flag and st.button("🚀 คำนวณ"):
     algorithms = {
-    "FFD 2D": shelf_based_layout,
-    "BFD 2D": shelf_based_layout,
-    "Guillotine 2D": shelf_based_layout
+        "FFD 2D": first_fit_decreasing_2d,
+        "BFD 2D": best_fit_decreasing_2d,
+        "Guillotine 2D": guillotine_cutting_2d
     }
-
 
     results = {}
     kpi_rows = []
@@ -110,6 +115,7 @@ if orders and not alert_flag and st.button("🚀 คำนวณ"):
     st.session_state.labels = labels
     st.session_state.calculated = True
 
+# แสดงผลลัพธ์
 if st.session_state.calculated:
     st.subheader("📊 Summary (Algorithm & Area)")
     st.dataframe(
